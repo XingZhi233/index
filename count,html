@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>葭禾记账🐱</title>
+    <style>
+        /* 全局基础重置 + 纯CSS小猫脚印与猫头背景 */
+        body { 
+            font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif; 
+            margin: 0;
+            padding: 20px; 
+            background-color: #bde0fe; 
+            /* 使用 CSS 渐变叠加，做出一层隐隐约约的软萌小猫肉垫脚印与猫头纹理 */
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.18) 4px, transparent 5px),
+                radial-gradient(circle at 40% 35%, rgba(255,255,255,0.18) 3px, transparent 4px),
+                radial-gradient(circle at 60% 35%, rgba(255,255,255,0.18) 3px, transparent 4px),
+                radial-gradient(circle at 30% 50%, rgba(255,255,255,0.18) 3px, transparent 4px),
+                radial-gradient(circle at 70% 50%, rgba(255,255,255,0.18) 3px, transparent 4px),
+                linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.1) 75%, rgba(255,255,255,0.1)),
+                linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.1) 75%, rgba(255,255,255,0.1));
+            background-size: 60px 60px, 60px 60px, 60px 60px, 60px 60px, 60px 60px, 30px 30px, 30px 30px;
+            background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 15px 15px;
+            color: #4a5568; 
+            min-height: 100vh;
+            box-sizing: border-box;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* 牛奶白豆腐块卡片 (加上萌萌的浅色猫咪包边) */
+        .card { 
+            background: #ffffff; 
+            padding: 24px; 
+            border-radius: 24px; 
+            box-shadow: 0 10px 25px rgba(74, 114, 151, 0.2); 
+            margin-bottom: 18px; 
+            border: 3px solid #ffca3a; /* 温暖的小猫金黄包边 */
+            position: relative;
+        }
+        
+        h1 { font-size: 0.95rem; color: #a1887f; margin: 0 0 6px 0; letter-spacing: 0.5px; }
+        
+        /* 资产看板 */
+        .total-balance { font-size: 2.5rem; font-weight: 900; color: #d4a373; margin-bottom: 15px; }
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+            margin-bottom: 15px; 
+            border-top: 3px dashed #ffeb3b; 
+            padding-top: 15px; 
+        }
+        .stat-item { font-size: 0.85rem; color: #8d99ae; }
+        .stat-value { font-size: 1.2rem; font-weight: 800; margin-top: 4px; }
+        .income-color { color: #43aa8b; } /* 活泼猫咪草绿 */
+        .expense-color { color: #ff6b6b; } /* 软乎乎肉垫粉 */
+
+        /* 支出/收入 小猫专属标签 */
+        .segmented-control { 
+            display: flex; 
+            background: #f1f5f9; 
+            padding: 5px; 
+            border-radius: 16px; 
+            margin-bottom: 15px; 
+            position: relative;
+        }
+        .segmented-control button { 
+            flex: 1; 
+            border: none; 
+            background: transparent; 
+            padding: 12px; 
+            margin: 0; 
+            font-size: 1rem;
+            color: #7b92a5; 
+            cursor: pointer; 
+            border-radius: 12px;
+            z-index: 1;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .segmented-control button.active { 
+            background: #ffffff; 
+            font-weight: bold; 
+            box-shadow: 0 5px 12px rgba(255, 202, 58, 0.4); 
+            transform: scale(1.02);
+        }
+        .segmented-control button#type-expense.active { color: #ff6b6b; background: #fff5f5; }
+        .segmented-control button#type-income.active { color: #e6a15c; background: #fdf2e9; }
+
+        /* 软绵绵的小猫输入框 */
+        input { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 8px 0; 
+            border-radius: 16px; 
+            border: 3px solid #edf2f7; 
+            box-sizing: border-box; 
+            font-size: 1rem; 
+            background: #f8f9fa;
+            transition: all 0.2s;
+            outline: none;
+        }
+        input:focus {
+            border-color: #ffca3a;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(255, 202, 58, 0.3);
+        }
+        
+        /* 奶茶色猫咪大按钮渐变色 提交按钮 */
+        .btn-submit { 
+            width: 100%; 
+            padding: 15px; 
+            border-radius: 18px; 
+            border: none;
+            background: linear-gradient(135deg, #f5e0c3, #d2b48c); /* 猫咪元气奶茶渐变 */
+            color: #ffffff; 
+            font-size: 1.1rem;
+            font-weight: bold; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            box-shadow: 0 6px 18px rgba(210, 180, 140, 0.4);
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-submit:active { 
+            transform: scale(0.92); 
+        }
+        
+        /* 明细头部 */
+        .list-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-top: 25px; 
+            margin-bottom: 12px; 
+            padding: 0 8px;
+        }
+        .list-header h3 { margin: 0; font-size: 1.1rem; color: #6d4c41; }
+        .btn-clear-all { 
+            background: #f8edeb; 
+            border: none; 
+            color: #f1a7a6; 
+            font-size: 0.85rem; 
+            font-weight: bold;
+            cursor: pointer; 
+            padding: 6px 14px; 
+            border-radius: 20px; 
+            box-shadow: 0 4px 10px rgba(241, 167, 166, 0.2);
+            transition: transform 0.1s;
+        }
+        .btn-clear-all:active { transform: scale(0.95); }
+
+        /* 账目列表 */
+        ul { list-style: none; padding: 0; margin: 0; }
+        
+        /* 喵喵卡片诞生动效 */
+        li { 
+            background: white; 
+            padding: 14px 18px; 
+            margin-bottom: 10px; 
+            border-radius: 18px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 6px 15px rgba(189, 224, 254, 0.3); 
+            border: 2px solid #f1f5f9;
+            position: relative;
+        }
+        
+        li.new-item-anim {
+            animation: jellyIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.5) forwards;
+        }
+
+        .time { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
+        .item-left { display: flex; flex-direction: column; }
+        .item-left strong { color: #475569; font-size: 1.05rem; }
+        .item-right { display: flex; align-items: center; gap: 12px; }
+        .amount-tag { font-size: 1.2rem; font-weight: 800; }
+        
+        /* 鱼干样式的圆滚滚删除按钮 */
+        .btn-delete { 
+            background: #f1f5f9; 
+            border: none; 
+            color: #94a3b8; 
+            font-size: 0.75rem; 
+            cursor: pointer; 
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .btn-delete:active { 
+            background: #f8edeb; 
+            color: #ff6b6b; 
+            transform: scale(0.85);
+        }
+
+        /* 🐟 抛物线小鱼干道具样式 */
+        .flying-element {
+            position: fixed;
+            font-size: 2.2rem;
+            pointer-events: none;
+            z-index: 9999;
+            animation: flyArc 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        /* 🎬 喵喵动画帧 */
+        @keyframes jellyIn {
+            0% { transform: translateY(-30px) scaleY(0.7); opacity: 0; }
+            60% { transform: translateY(5px) scaleY(1.1); }
+            80% { transform: translateY(-2px) scaleY(0.95); }
+            100% { transform: translateY(0) scaleY(1); opacity: 1; }
+        }
+
+        @keyframes flyArc {
+            0% { transform: translate(0, 0) rotate(0deg) scale(0.5); opacity: 1; }
+            50% { transform: translate(var(--x1), var(--y1)) rotate(180deg) scale(1.4); }
+            100% { transform: translate(var(--x2), var(--y2)) rotate(360deg) scale(0.3); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card" id="mainCard">
+        <h1>🐾 葭禾记账🐱 (收入 - 支出)</h1>
+        <div class="total-balance" id="balanceDisplay">¥ 0.00</div>
+        
+        <div class="stats-grid">
+            <div class="stat-item">
+                🐟 收入
+                <div class="stat-value income-color" id="totalIncomeDisplay">¥ 0.00</div>
+            </div>
+            <div class="stat-item">
+                🍶 支出
+                <div class="stat-value expense-color" id="totalExpenseDisplay">¥ 0.00</div>
+            </div>
+        </div>
+
+        <div class="segmented-control">
+            <button id="type-expense" class="active" onclick="setType('expense')">🐾 支出</button>
+            <button id="type-income" onclick="setType('income')">🐟收入</button>
+        </div>
+        
+        <input type="number" id="amountInput" placeholder="🐾 摇尾巴输入金额 0.00" step="0.01" inputmode="decimal">
+        <input type="text" id="noteInput" placeholder="🐕 买罐罐还是拆家了？写个备注吧~">
+        <button class="btn-submit" id="submitBtn" onclick="addRecord()">发射鱼干 🚀</button>
+    </div>
+
+    <div class="list-header">
+        <h3>📋 喵喵账目明细</h3>
+        <button class="btn-clear-all" onclick="clearAllRecords()">🐾 清空历史</button>
+    </div>
+    
+    <ul id="historyList"></ul>
+
+    <script>
+        let records = JSON.parse(localStorage.getItem('my_puppy_ledger_v4')) || [];
+        let currentType = 'expense';
+        let isJustAdded = false; 
+
+        function setType(type) {
+            currentType = type;
+            document.getElementById('type-expense').classList.toggle('active', type === 'expense');
+            document.getElementById('type-income').classList.toggle('active', type === 'income');
+            document.getElementById('amountInput').focus();
+        }
+
+        function render() {
+            const listEl = document.getElementById('historyList');
+            listEl.innerHTML = '';
+            
+            let totalIncome = 0;
+            let totalExpense = 0;
+            
+            records.slice().reverse().forEach((r, idx) => {
+                const realIndex = records.length - 1 - idx;
+                let sign = '🐾 -';
+                let colorClass = 'expense-color';
+                
+                if (r.type === 'income') {
+                    totalIncome += r.amount;
+                    sign = '🐟 +';
+                    colorClass = 'income-color';
+                } else {
+                    totalExpense += r.amount;
+                }
+                
+                const animClass = (isJustAdded && idx === 0) ? 'new-item-anim' : '';
+                
+                listEl.innerHTML += `
+                    <li class="${animClass}">
+                        <div class="item-left">
+                            <div><strong>${r.note}</strong></div>
+                            <div class="time">🐶 喵喵时刻: ${r.time}</div>
+                        </div>
+                        <div class="item-right">
+                            <span class="amount-tag ${colorClass}">${sign}¥${r.amount.toFixed(2)}</span>
+                            <button class="btn-delete" onclick="deleteRecord(${realIndex})">✕</button>
+                        </div>
+                    </li>`;
+            });
+            
+            const balance = totalIncome - totalExpense;
+            document.getElementById('totalIncomeDisplay').innerText = `¥ ${totalIncome.toFixed(2)}`;
+            document.getElementById('totalExpenseDisplay').innerText = `¥ ${totalExpense.toFixed(2)}`;
+            
+            const balanceEl = document.getElementById('balanceDisplay');
+            balanceEl.innerText = `¥ ${balance.toFixed(2)}`;
+            balanceEl.style.color = balance >= 0 ? '#d4a373' : '#ff6b6b';
+            
+            isJustAdded = false;
+        }
+
+        // 🐟 发射抛物线小鱼干/小猫头的魔法
+        function createFlyingEffect() {
+            const btn = document.getElementById('submitBtn');
+            const listHeader = document.querySelector('.list-header');
+            
+            if(!btn || !listHeader) return;
+
+            const btnRect = btn.getBoundingClientRect();
+            const targetRect = listHeader.getBoundingClientRect();
+
+            const flyer = document.createElement('div');
+            flyer.className = 'flying-element';
+            
+            // 小鱼干或各种可爱小猫头表情随机出现！
+            const catEmojis = ['🐟', '🐱', '🐈', '🐈‍⬛', '🐾'];
+            flyer.innerText = catEmojis[Math.floor(Math.random() * catEmojis.length)];
+
+            flyer.style.left = `${btnRect.left + btnRect.width/2 - 16}px`;
+            flyer.style.top = `${btnRect.top}px`;
+
+            const moveX = (targetRect.left + 20) - btnRect.left;
+            const moveY = (targetRect.top + 10) - btnRect.top;
+
+            flyer.style.setProperty('--x1', `${moveX * 0.4}px`);
+            flyer.style.setProperty('--y1', `${moveY - 140}px`); 
+            flyer.style.setProperty('--x2', `${moveX}px`);
+            flyer.style.setProperty('--y2', `${moveY}px`);
+
+            document.body.appendChild(flyer);
+
+            setTimeout(() => {
+                flyer.remove();
+            }, 600);
+        }
+
+        function addRecord() {
+            const amountInput = document.getElementById('amountInput');
+            const noteInput = document.getElementById('noteInput');
+            const amount = parseFloat(amountInput.value);
+            const note = noteInput.value.trim() || (currentType === 'income' ? '捡到鱼干' : '修喵啃鞋子');
+
+            if (isNaN(amount) || amount <= 0) {
+                alert('喵呜？请填入正确的金额哦~ 🥺🐾');
+                return;
+            }
+
+            const now = new Date();
+            const timeStr = `${now.getMonth()+1}-${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            createFlyingEffect();
+
+            setTimeout(() => {
+                records.push({ 
+                    type: currentType, 
+                    amount: amount, 
+                    note: note, 
+                    time: timeStr 
+                });
+                
+                localStorage.setItem('my_puppy_ledger_v4', JSON.stringify(records));
+
+                amountInput.value = '';
+                noteInput.value = '';
+                isJustAdded = true; 
+                render();
+            }, 250); 
+        }
+
+        function deleteRecord(index) {
+            if(confirm("喵呜？真的要丢弃这笔鱼干账目吗？🥺")) {
+                records.splice(index, 1);
+                localStorage.setItem('my_puppy_ledger_v4', JSON.stringify(records));
+                render();
+            }
+        }
+
+        function clearAllRecords() {
+            if(confirm("⚠️ 警告：确定要把所有小猫历史明细都埋进土里清空吗？找不回来啦！")) {
+                records = [];
+                localStorage.removeItem('my_puppy_ledger_v4');
+                render();
+            }
+        }
+
+        render();
+    </script>
+</body>
+</html>
